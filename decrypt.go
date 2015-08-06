@@ -76,6 +76,7 @@ func (writer *EncryptionReader) finish() ([]byte) {
   return toWrite
 }
 
+// Replace this. Need to patch go's openssl to expose RSA_private_decrypt
 func decryptKey(key []byte, privateKeyFile *string) ([]byte) {
   cmd := exec.Command("openssl", "rsautl", "-decrypt", "-inkey", *privateKeyFile)
   outPipe, err := cmd.StdinPipe()

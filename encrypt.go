@@ -67,6 +67,7 @@ func (writer *EncryptionWriter) finish() {
   writer.wr.Close()
 }
 
+// Replace this. Need to patch go's openssl to expose RSA_public_encrypt
 func encryptKey(key []byte, publicKeyFile *string) ([]byte) {
   cmd := exec.Command("openssl", "rsautl", "-encrypt", "-inkey", *publicKeyFile, "-pubin")
   outPipe, err := cmd.StdinPipe()
