@@ -2,11 +2,13 @@ package main
 
 import (
   "io"
+  "io/ioutil"
   "archive/tar"
   "crypto/rand"
   "fmt"
   "log"
   "github.com/spacemonkeygo/openssl"
+  "os/exec"
 )
 
 func randomBytes(num int) (key []byte) {
@@ -65,7 +67,30 @@ func (writer *EncryptionWriter) finish() {
   writer.wr.Close()
 }
 
-func newEncryptionWriter(publicKey *openssl.PublicKey, output io.Writer) (*EncryptionWriter) {
+func encryptKey(key []byte, publicKeyFile *string) ([]byte) {
+  cmd := exec.Command("openssl", "rsautl", "-encrypt", "-inkey", *publicKeyFile, "-pubin")
+  outPipe, err := cmd.StdinPipe()
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  inPipe, err := cmd.StdoutPipe()
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  outPipe.Write(key)
+  outPipe.Close()
+
+  go cmd.Run()
+
+  encryptedKey, err := ioutil.ReadAll(inPipe)
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+
+  return encryptedKey
+}
+
+func newEncryptionWriter(publicKey *string, output io.Writer) (*EncryptionWriter) {
   cipher, err := openssl.GetCipherByName("aes-256-cbc")
   if (err != nil) {
     log.Fatalln(err)
@@ -80,13 +105,13 @@ func newEncryptionWriter(publicKey *openssl.PublicKey, output io.Writer) (*Encry
 
   tarFile := tar.NewWriter(output)
   writer := &EncryptionWriter {wr: tarFile, ctx:  ctx,}
-  writer.writeToTar("key", key)
+  writer.writeToTar("key", encryptKey(key, publicKey))
   writer.writeToTar("iv", iv)
 
   return writer
 }
 
-func Encrypt(publicKey *openssl.PublicKey, input io.ReadCloser, output io.WriteCloser) {
+func Encrypt(publicKey *string, input io.ReadCloser, output io.WriteCloser) {
   encryptionWriter := newEncryptionWriter(publicKey, output)
   io.Copy(encryptionWriter, input)
   encryptionWriter.finish()

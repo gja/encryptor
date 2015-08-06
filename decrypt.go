@@ -1,6 +1,7 @@
 package main
 
 import (
+  "os/exec"
   "io"
   "io/ioutil"
   "archive/tar"
@@ -75,10 +76,33 @@ func (writer *EncryptionReader) finish() ([]byte) {
   return toWrite
 }
 
-func newEncryptionReader(privateKey *openssl.PrivateKey, input io.Reader) (*EncryptionReader) {
+func decryptKey(key []byte, privateKeyFile *string) ([]byte) {
+  cmd := exec.Command("openssl", "rsautl", "-decrypt", "-inkey", *privateKeyFile)
+  outPipe, err := cmd.StdinPipe()
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  inPipe, err := cmd.StdoutPipe()
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  outPipe.Write(key)
+  outPipe.Close()
+
+  go cmd.Run()
+
+  data, err := ioutil.ReadAll(inPipe)
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+
+  return data
+}
+
+func newEncryptionReader(privateKey *string, input io.Reader) (*EncryptionReader) {
   tarFile := tar.NewReader(input)
 
-  key := readNextEntry(tarFile)
+  key := decryptKey(readNextEntry(tarFile), privateKey)
   iv := readNextEntry(tarFile)
 
   cipher, err := openssl.GetCipherByName("aes-256-cbc")
@@ -95,7 +119,7 @@ func newEncryptionReader(privateKey *openssl.PrivateKey, input io.Reader) (*Encr
 }
 
 
-func Decrypt(privateKey *openssl.PrivateKey, input io.ReadCloser, output io.WriteCloser) {
+func Decrypt(privateKey *string, input io.ReadCloser, output io.WriteCloser) {
   reader := newEncryptionReader(privateKey, input)
   io.Copy(output, reader)
   output.Write(reader.finish())
