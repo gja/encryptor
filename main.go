@@ -2,17 +2,44 @@ package main
 import (
   "flag"
   "os"
+  "log"
+  "github.com/spacemonkeygo/openssl"
+  "io/ioutil"
 )
 
+func readPublicKey(filename string) (*openssl.PublicKey){
+  keyBytes, err := ioutil.ReadFile(filename)
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  publicKey, err := openssl.LoadPublicKeyFromPEM(keyBytes)
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  return &publicKey
+}
+
+func readPrivateKey(filename string) (*openssl.PrivateKey){
+  keyBytes, err := ioutil.ReadFile(filename)
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  publicKey, err := openssl.LoadPrivateKeyFromPEM(keyBytes)
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+  return &publicKey
+}
+
 func main() {
-  _ = flag.String("publickey", "public.pem", "Path to public.pem")
-  _ = flag.String("privatekey", "private.pem", "Path to private.pem")
+  publicKey := flag.String("publickey", "public.pem", "Path to public.pem")
+  privateKey := flag.String("privatekey", "private.pem", "Path to private.pem")
   flag.Parse()
   action := flag.Arg(0)
 
   if (action == "decrypt") {
-    Decrypt(nil, os.Stdin, os.Stdout)
+    Decrypt(readPrivateKey(*privateKey), os.Stdin, os.Stdout)
   } else {
-    Encrypt(nil, os.Stdin, os.Stdout)
+    Encrypt(readPublicKey(*publicKey), os.Stdin, os.Stdout)
   }
 }

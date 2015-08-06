@@ -2,7 +2,6 @@ package main
 
 import (
   "io"
-  "io/ioutil"
   "archive/tar"
   "crypto/rand"
   "fmt"
@@ -91,16 +90,4 @@ func Encrypt(publicKey *openssl.PublicKey, input io.ReadCloser, output io.WriteC
   encryptionWriter := newEncryptionWriter(publicKey, output)
   io.Copy(encryptionWriter, input)
   encryptionWriter.finish()
-}
-
-func readPublicKey(filename string) (*openssl.PublicKey){
-  keyBytes, err := ioutil.ReadFile(filename)
-  if (err != nil) {
-    log.Fatalln(err)
-  }
-  publicKey, err := openssl.LoadPublicKeyFromPEM(keyBytes)
-  if (err != nil) {
-    log.Fatalln(err)
-  }
-  return &publicKey
 }
