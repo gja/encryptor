@@ -1,4 +1,4 @@
 GOPATH := $(shell pwd)
 
-encryptor: encrypt.go
+encryptor: encrypt.go decrypt.go
 	GOPATH=$(GOPATH) go build

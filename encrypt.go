@@ -74,7 +74,8 @@ func newEncryptionWriter(publicKey *openssl.PublicKey, output io.Writer) (*Encry
   }
 
   key := randomBytes(cipher.KeySize())
-  ctx, err := openssl.NewEncryptionCipherCtx(cipher, nil, key, randomBytes(cipher.IVSize()))
+  iv := randomBytes(cipher.IVSize())
+  ctx, err := openssl.NewEncryptionCipherCtx(cipher, nil, key, iv)
   if (err != nil) {
     log.Fatalln(err)
   }
@@ -82,6 +83,7 @@ func newEncryptionWriter(publicKey *openssl.PublicKey, output io.Writer) (*Encry
   tarFile := tar.NewWriter(output)
   writer := &EncryptionWriter {wr: tarFile, ctx:  ctx,}
   writer.writeToTar("key", key)
+  writer.writeToTar("iv", iv)
 
   return writer
 }
@@ -104,6 +106,6 @@ func readPublicKey(filename string) (*openssl.PublicKey){
   return &publicKey
 }
 
-func main() {
+func maien() {
   Encrypt(readPublicKey(os.Args[1]), os.Stdin, os.Stdout)
 }
