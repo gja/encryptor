@@ -3,7 +3,6 @@ package main
 import (
   "io"
   "io/ioutil"
-  "os"
   "archive/tar"
   "log"
   "github.com/spacemonkeygo/openssl"
@@ -100,8 +99,4 @@ func Decrypt(privateKey *openssl.PrivateKey, input io.ReadCloser, output io.Writ
   reader := newEncryptionReader(privateKey, input)
   io.Copy(output, reader)
   output.Write(reader.finish())
-}
-
-func main() {
-  Decrypt(nil, os.Stdin, os.Stdout)
 }

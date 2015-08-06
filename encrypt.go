@@ -1,7 +1,6 @@
 package main
 
 import (
-  "os"
   "io"
   "io/ioutil"
   "archive/tar"
@@ -104,8 +103,4 @@ func readPublicKey(filename string) (*openssl.PublicKey){
     log.Fatalln(err)
   }
   return &publicKey
-}
-
-func maien() {
-  Encrypt(readPublicKey(os.Args[1]), os.Stdin, os.Stdout)
 }
