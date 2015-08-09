@@ -76,11 +76,17 @@ func (writer *EncryptionReader) finish() ([]byte) {
 }
 
 func decryptKey(key []byte, privateKey *openssl.PrivateKey) ([]byte) {
-  outputBytes := make([]byte, 1024)
+  rsaSize, err := (*privateKey).RSASize()
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+
+  outputBytes := make([]byte, rsaSize)
   len, err := (*privateKey).PrivateDecrypt(outputBytes, key, openssl.RSA_PADDING_PKCS1)
   if (err != nil) {
     log.Fatalln(err)
   }
+
   output := make([]byte, len)
   copy(output, outputBytes)
   return output

@@ -66,11 +66,17 @@ func (writer *EncryptionWriter) finish() {
 }
 
 func encryptKey(key []byte, privateKey *openssl.PublicKey) ([]byte) {
-  outputBytes := make([]byte, 1024)
+  rsaSize, err := (*privateKey).RSASize()
+  if (err != nil) {
+    log.Fatalln(err)
+  }
+
+  outputBytes := make([]byte, rsaSize)
   len, err := (*privateKey).PublicEncrypt(outputBytes, key, openssl.RSA_PADDING_PKCS1)
   if (err != nil) {
     log.Fatalln(err)
   }
+
   output := make([]byte, len)
   copy(output, outputBytes)
   return output
