@@ -1,12 +1,11 @@
 package main
 
 import (
-  "os/exec"
   "io"
   "io/ioutil"
   "archive/tar"
   "log"
-  "github.com/spacemonkeygo/openssl"
+  "github.com/gja/openssl"
 )
 
 func min(a, b int64) int64 {
@@ -76,31 +75,18 @@ func (writer *EncryptionReader) finish() ([]byte) {
   return toWrite
 }
 
-// Replace this. Need to patch go's openssl to expose RSA_private_decrypt
-func decryptKey(key []byte, privateKeyFile *string) ([]byte) {
-  cmd := exec.Command("openssl", "rsautl", "-decrypt", "-inkey", *privateKeyFile)
-  outPipe, err := cmd.StdinPipe()
+func decryptKey(key []byte, privateKey *openssl.PrivateKey) ([]byte) {
+  outputBytes := make([]byte, 1024)
+  len, err := (*privateKey).PrivateDecrypt(outputBytes, key, openssl.RSA_PADDING_PKCS1)
   if (err != nil) {
     log.Fatalln(err)
   }
-  inPipe, err := cmd.StdoutPipe()
-  if (err != nil) {
-    log.Fatalln(err)
-  }
-  outPipe.Write(key)
-  outPipe.Close()
-
-  go cmd.Run()
-
-  data, err := ioutil.ReadAll(inPipe)
-  if (err != nil) {
-    log.Fatalln(err)
-  }
-
-  return data
+  output := make([]byte, len)
+  copy(output, outputBytes)
+  return output
 }
 
-func newEncryptionReader(privateKey *string, input io.Reader) (*EncryptionReader) {
+func newEncryptionReader(privateKey *openssl.PrivateKey, input io.Reader) (*EncryptionReader) {
   tarFile := tar.NewReader(input)
 
   key := decryptKey(readNextEntry(tarFile), privateKey)
@@ -120,7 +106,7 @@ func newEncryptionReader(privateKey *string, input io.Reader) (*EncryptionReader
 }
 
 
-func Decrypt(privateKey *string, input io.ReadCloser, output io.WriteCloser) {
+func Decrypt(privateKey *openssl.PrivateKey, input io.ReadCloser, output io.WriteCloser) {
   reader := newEncryptionReader(privateKey, input)
   io.Copy(output, reader)
   output.Write(reader.finish())
