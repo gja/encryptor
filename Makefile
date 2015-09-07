@@ -1,6 +1,9 @@
-GOPATH := $(shell pwd)
+GOPATH := $(shell pwd)/vendor
 
-encryptor: encrypt.go decrypt.go main.go
+deps:
+	GOPATH=$(GOPATH) go get -d
+
+encryptor: deps encrypt.go decrypt.go main.go
 	GOPATH=$(GOPATH) go build -o $@
 
 end2endtest: encryptor
